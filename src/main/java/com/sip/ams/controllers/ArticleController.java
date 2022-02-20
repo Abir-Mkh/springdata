@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -38,22 +40,24 @@ public class ArticleController {
 	@GetMapping("list")
 	public String listProviders(Model model) {
 		// model.addAttribute("articles", null);
-		model.addAttribute("articles", articleRepository.findAll());
+		List<Article> la = (List<Article>) articleRepository.findAll();
+		if (la.size() == 0)
+			la = null;
+		model.addAttribute("articles", la);
 		return "article/listArticles";
 	}
 
 	@GetMapping("add")
-	public String showAddArticleForm(Article article, Model model) {
+	public String showAddArticleForm(Model model) {
 
 		model.addAttribute("providers", providerRepository.findAll());
-		// model.addAttribute("article", new Article());
+		model.addAttribute("article", new Article());
 		return "article/addArticle";
 	}
 
 	@PostMapping("add")
 //@ResponseBody
-	public String addArticle(@Valid Article article, BindingResult result,
-			@RequestParam(name = "providerId", required = false) Long p, @RequestParam("files") MultipartFile[] files) {
+	public String addArticle(@Valid Article article, BindingResult result, @RequestParam(name = "providerId", required = true) Long p, @RequestParam("files") MultipartFile[] files) {
 
 		Provider provider = providerRepository.findById(p).orElseThrow(() -> new IllegalArgumentException("Invalidprovider Id:" + p));
 		article.setProvider(provider);
@@ -90,8 +94,7 @@ public class ArticleController {
 
 	@GetMapping("edit/{id}")
 	public String showArticleFormToUpdate(@PathVariable("id") long id, Model model) {
-		Article article = articleRepository.findById(id)
-				.orElseThrow(() -> new IllegalArgumentException("Invalid providerId:" + id));
+		Article article = articleRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid providerId:" + id));
 
 		model.addAttribute("article", article);
 		model.addAttribute("providers", providerRepository.findAll());
@@ -101,15 +104,13 @@ public class ArticleController {
 	}
 
 	@PostMapping("edit/{id}")
-	public String updateArticle(@PathVariable("id") long id, @Valid Article article, BindingResult result, Model model,
-			@RequestParam(name = "providerId", required = false) Long p) {
+	public String updateArticle(@PathVariable("id") long id, @Valid Article article, BindingResult result, Model model, @RequestParam(name = "providerId", required = false) Long p) {
 		if (result.hasErrors()) {
 			article.setId(id);
 			return "article/updateArticle";
 		}
 
-		Provider provider = providerRepository.findById(p)
-				.orElseThrow(() -> new IllegalArgumentException("Invalidprovider Id:" + p));
+		Provider provider = providerRepository.findById(p).orElseThrow(() -> new IllegalArgumentException("Invalidprovider Id:" + p));
 		article.setProvider(provider);
 
 		articleRepository.save(article);
